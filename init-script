@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# Fancontrol:
+#   Fancontrol for Dell PowerEdge
+#
+# chkconfig: off 17 30
+# description: Fancontrol for Dell PowerEdge
+#
+#
+# Log action
+#
+
+FANCONTROL="/opt/fancontrol/fancontrol.py"
+PIDFILE="/var/run/fancontrol.pid"
+LOGFILE="/var/log/fancontrol.log"
+
+log() {
+   echo "$1"
+   logger -t NUT "$1"
+}
+
+start() {
+   if [ ! -f "${PIDFILE}" ]; then
+      "${FANCONTROL}" > "${LOGFILE}" 2>&1 &        
+      PID="$!"
+      if [ -n "${PID}" ]; then
+          if (echo "${PID}" > "${PIDFILE}"); then
+              log "fancontrol started"
+          else
+              kill -USR1 "${PID}"
+              log "fancontrol unable to create pid file"
+          fi
+      fi
+   else
+        PID="$(cat "${PIDFILE}")"
+        if (ps aux 2> /dev/null || ps) | grep -q "${PID}"; then
+             log "fancontrol is already running"
+         else                     
+             rm -f "${PIDFILE}"            
+             start
+         fi  
+   fi
+}
+
+stop() {
+   if [ -f "${PIDFILE}" ] ; then
+      PID="$(cat "${PIDFILE}")"
+      kill -USR1 "${PID}" && \
+      rm -f "${PIDFILE}"
+   else
+      log "fancontrol is not running"
+   fi
+}
+
+case "${1}" in
+   "start")
+      start
+   ;;
+   "stop")
+      stop
+   ;;
+   "status")
+      if [ -f "${PIDFILE}" ] ; then
+         PID="$(cat "${PIDFILE}")"
+         if (ps aux 2> /dev/null || ps) | grep -q "${PID}"; then
+             log "fancontrol is running, pid ${PID}"
+         else
+             rm -f "${PIDFILE}"
+             log "fancontrol exited unexpectedly"
+         fi
+         exit 0
+      else
+         log "fancontrol is not running"
+         exit 3
+      fi
+   ;;
+   "restart")
+      stop
+      start
+   ;;
+   *)
+      echo "Usage: $(basename "${0}") {start|stop|status|restart}"
+      exit 1
+   ;;
+esac
+
