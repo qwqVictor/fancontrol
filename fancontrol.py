@@ -12,7 +12,7 @@ import platform
 import signal
 import os
 
-VERSION="1.0.0beta1"
+VERSION="1.0.0beta2"
 COPYRIGHT_YEAR=2022
 AUTHOR="Victor Huang <i@qwq.ren>"
 
@@ -60,8 +60,11 @@ if UNAME_SYSTEM == "VMkernel":
 # get current temperature for cpu 0
 def get_package_temp():
     if UNAME_SYSTEM == "VMkernel":
-        result = subprocess.run([IPMITOOL_BIN, *IPMITOOL_EXTRA_ARGS, "sensor", "reading", "Temp"], capture_output=True)
-        return float(MATCH_TEMP.search(result.stdout.decode()).group())
+        try:
+            result = subprocess.run([IPMITOOL_BIN, *IPMITOOL_EXTRA_ARGS, "sensor", "reading", "Temp"], capture_output=True)
+            return float(MATCH_TEMP.search(result.stdout.decode()).group())
+        except:
+            return None
     else:
         with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
             return float(f.read()) / 1000
@@ -128,8 +131,11 @@ Levels:
             status = do_fan_control()
             if status:
                 if recent_thermal_level != status[1]:
-                    print(get_log_time() + "Thermal level changed from %d to %d. Now CPU is %d°C." % (recent_thermal_level, status[1], status[0]))
-                    recent_thermal_level = status[1]
+                    if (status[0] is not None) and (status[1] is not None):
+                        print(get_log_time() + "Thermal level changed from %d to %d. Now CPU is %d°C." % (recent_thermal_level, status[1], status[0]))
+                        recent_thermal_level = status[1]
+                    else:
+                        print(get_log_time() + "Get temperature failed. Triggered auto.")
             time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
