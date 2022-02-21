@@ -33,7 +33,7 @@ IPMITOOL_EXTRA_ARGS=[]
 CMDTYPE="raw"
 BASE_FAN = ["0x30", "0x30", "0x02", "0xff"]
 BASE_AUTO=["0x30", "0x30", "0x01"]
-FANSPEED=[8]
+FANSPEED=[6]
 
 IPMITOOL_EXECBASE = [IPMITOOL_BIN] + IPMITOOL_EXTRA_ARGS + [CMDTYPE]
 
@@ -119,7 +119,7 @@ def main(argv):
         if (not argv[1].startswith("--") and argv[1].find("h") != -1) or argv[1] == "--help":
             print(r"""
 Levels:
-- 0: 8% fan speed, for temperature range [0, 66°C], low temp
+- 0: 6% fan speed, for temperature range [0, 66°C], low temp
 - 1: let it control
     """)
         else:
